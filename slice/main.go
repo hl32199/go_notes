@@ -3,9 +3,10 @@ package main
 import "fmt"
 
 func main() {
-	Init()
+	//Init()
 	//AssignSliceToAnother()
 	//AppendSlice()
+	copySlice()
 }
 
 func Init() {
@@ -70,4 +71,19 @@ func AppendSlice() {
 	s333 := append(s33, []int{4, 5, 6, 7}...)             //s33不变，因为检测到s33容量不够，会直接分配更大的底层数组，原数组不会被更改
 	fmt.Printf("%#v,%d,%d\n", s33, len(s33), cap(s33))    //[]int{1, 2},2,3
 	fmt.Printf("%#v,%d,%d\n", s333, len(s333), cap(s333)) //[]int{1, 2, 4, 5, 6, 7},6,6
+}
+
+func copySlice() {
+	s1 := make([]int, 0, 10)
+	s2 := []int{1, 5, 6}
+	copy(s1, s2)    //拷贝
+	fmt.Println(s1) //[]
+
+	s3 := make([]int, 5, 5)
+	s4 := make([]int, 3)
+	s4[0] = 3
+	s4[1] = 9
+	s4[2] = 11
+	copy(s3, s4)
+	fmt.Println(s3) //[3 9 11 0 0]
 }
