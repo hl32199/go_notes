@@ -117,7 +117,7 @@ func netpollopen(fd uintptr, pd *pollDesc) int32 {
 	return -epollctl(epfd, _EPOLL_CTL_ADD, int32(fd), &ev)
 }
 ```
-### 通过epoll_wait结合携程挂起与唤醒提高cpu使用效率
+### 通过epoll_wait结合协程挂起与唤醒提高cpu使用效率
 以net包的conn结构体的Read方法为例，往下寻找调用链：
 ```go
 package net
