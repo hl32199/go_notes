@@ -382,4 +382,22 @@ func newClusterState(
 
 	return &c, nil
 }
+
+//选择节点
+func (c *ClusterClient) cmdNode(
+	ctx context.Context,
+	cmdInfo *CommandInfo,
+	slot int,
+) (*clusterNode, error) {
+	state, err := c.state.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+    //如果执行的是ReadOnly的命令，且集群配置允许在从节点执行ReadOnly命令，则选择从节点执行，否则选择主节点
+	if c.opt.ReadOnly && cmdInfo != nil && cmdInfo.ReadOnly {
+		return c.slotReadOnlyNode(state, slot)
+	}
+	return state.slotMasterNode(slot)
+}
 ```
