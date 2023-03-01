@@ -18,7 +18,7 @@ broker端参数，控制broker在响应producer成功之前需要收到ISR中多
 broker端参数，备份数量，应该大于min.insync.replicas,否则有一个副本不可用，则整个partition都不可用了。
 ### min.insync.replicas
 topic级别参数。  
-当producer将ack设置为“全部”（或“-1”）时，min.insync.replicas指定了被认为写入成功的最小副本数。如果这个最小值不能满足，
+当producer将ack设置为“all”（或“-1”）时，min.insync.replicas指定了被认为写入成功的最小副本数。如果这个最小值不能满足，
 那么producer将会引发一个异常（NotEnoughReplicas或NotEnoughReplicasAfterAppend）。
 当一起使用时，min.insync.replicas和acks允许您强制更大的耐久性保证。 
 一个经典的情况是创建一个复本数为3的topic，将min.insync.replicas设置为2，并且producer使用“all”选项。 
@@ -26,7 +26,7 @@ topic级别参数。
 ### enable.auto.commit
 consumer端参数，应设置为false,手动提交以保证消费完成才提交。
 ### unclean.leader.election.enable
-broker端参数，指定不在ISR中的副本是否能够被选举为leader。是在可用性和数据一致性直接的选择，置为true选择可用性优先（会优先选择ISR中的副本），
+broker端参数，指定不在ISR中的副本是否能够被选举为leader。是在可用性和数据一致性之间的选择，置为true选择可用性优先（会优先选择ISR中的副本），
 false选择一致性优先。
 
 ## 消费者负载均衡
@@ -46,6 +46,15 @@ false选择一致性优先。
 >回答：
 > 1. Broker自动在好的路径上重建副本，然后从leader同步；  
 > 2. Kafka支持工具能够将某个路径上的数据拷贝到其他路径上
+
+- 消费者已拉取未ack的消息，消费者再次拉取，会重复拉到吗？
+>回答：
+>Kafka处理这个问题的方式不同。我们的Topic分为一组完全有序的分区，每个分区在任何给定时间由每个订阅消费者组中的一个消费者消费。这意味着消费者在每个分区中的位置只是一个整数，即要消费的下一条消息的偏移量。这使得关于已消耗的内容的状态非常小，每个分区只有一个数字。此状态可以定期检查点。这使得相当于消息确认的功能成本非常低。  
+[http://bcxw.net/article/671.html](Kafkaack)
+
+- 消费者如何提交offset,没消费一条就提交，还是可以批量提交比如提交100代表offset<=100的消息都被消费，下次提交200代表offset<=200的
+消息都被消费；如果每个消息都提交，能否乱序的提交offset?
+
 
 #### 参考资料
 [https://colobu.com/2017/01/26/A-Guide-To-The-Kafka-Protocol/](https://colobu.com/2017/01/26/A-Guide-To-The-Kafka-Protocol/)
