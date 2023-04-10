@@ -278,12 +278,13 @@ func (pom *partitionOffsetManager) MarkOffset(offset int64, metadata string) {
 后一个消息(假设offset=2)成功执行后调用MarkMessage，此时该分区的offset会被更新为3(2+1,offset表示的是下一个未消费的消息)，
 这样offset为1的消息就相当于丢失了。  
 所以为了确保消息不会丢失，应该串行的消费一个分区的消息。同时为了避免阻塞后面的消息的消费，对于消费失败的消息应该有一个异常流程
-来保证异步的排查修复和重试，进入异常流程后应该调用MarkMessage。
+来保证异步的排查修复和重试，进入异常流程后应该调用MarkMessage。  
 如果想充分利用服务器cpu，可以增加分区数，在消费者组中的消费者数量不变的情况下，单个消费者分配到的分区数会增加，而每个分区有一
 个独立的协程在消费。
 
 #### 问：如果消费者服务有10个实例，发版时，每个实例串行重启，是否会导致10次 rebalance?如果是并行重启呢？
 
+#### 问：如何回溯消息（重新消费已消费过的消息）?
 
 ### 参考资料：
 [kafka通讯协议指南中文版](https://colobu.com/2017/01/26/A-Guide-To-The-Kafka-Protocol/)  
