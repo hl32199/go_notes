@@ -355,7 +355,7 @@ func (child *partitionConsumer) parseMessages(msgSet *MessageSet) ([]*ConsumerMe
 	return messages, nil
 }
 ```
-
+可见，如果没有重连，没有commit的消息也不会被重新拉取。拉取消息的offset和commit的offset是分开维护，互相没有影响的。
 #### 问：如果消费者服务有10个实例，发版时，每个实例串行重启，是否会导致10次 rebalance?如果是并行重启呢？
 
 #### 问：如何回溯消息（重新消费已消费过的消息）?
