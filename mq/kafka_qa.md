@@ -47,12 +47,17 @@ OffsetCommitResponse => [TopicName [Partition ErrorCode]]]
 ```
 FetchRequest => ReplicaId MaxWaitTime MinBytes [TopicName [Partition FetchOffset MaxBytes]]
   ReplicaId => int32
-  MaxWaitTime => int32
-  MinBytes => int32
+  MaxWaitTime => int32 //如果没有足够的数据可发送时，最大阻塞等待时间，以毫秒为单位。
+  //返回响应消息的最小字节数目，必须设置。
+  //如果客户端将此值设为0，服务器将会立即返回，但如果没有新的数据，服务端会返回一个空消息集。
+  //如果它被设置为1，则服务器将在至少一个分区收到一个字节的数据的情况下立即返回，或者等到超时时间达到。
+  //通过设置较高的值，结合超时设置，消费者可以在牺牲一点实时性能的情况下通过一次读取较大的字节的数据块从而提高的吞吐量
+  //（例如，设置MaxWaitTime至100毫秒，设置MinBytes为64K，将允许服务器累积数据达到64K前等待长达100ms再响应）。
+  MinBytes => int32 
   TopicName => string
   Partition => int32
-  FetchOffset => int64
-  MaxBytes => int32
+  FetchOffset => int64 //获取数据的起始偏移量
+  MaxBytes => int32 //此分区返回消息集所能包含的最大字节数。这有助于限制响应消息的大小。
 ```
 响应：
 ```
@@ -66,14 +71,14 @@ FetchResponse => [TopicName [Partition ErrorCode HighwaterMarkOffset MessageSetS
   
 v1 (supported in 0.9.0 or later) and v2 (supported in 0.10.0 or later)
 FetchResponse => ThrottleTime [TopicName [Partition ErrorCode HighwaterMarkOffset MessageSetSize MessageSet]]
-  ThrottleTime => int32
+  ThrottleTime => int32 //由于限额冲突而导致的时间延迟长度，以毫秒为单位。（如果没有违反限额条件，此值为0）
   TopicName => string
   Partition => int32
   ErrorCode => int16
-  HighwaterMarkOffset => int64
-  MessageSetSize => int32
+  HighwaterMarkOffset => int64 //此分区日志中最末尾的偏移量。此信息可被客户端用来确定后面还有多少条消息。
+  MessageSetSize => int32 //此分区中消息集的字节长度
 
-MessageSet => [Offset MessageSize Message]
+MessageSet => [Offset MessageSize Message] //此分区获取到的消息集，格式与之前描述相同
   Offset => int64
   MessageSize => int32
 

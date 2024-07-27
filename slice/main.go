@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 func main() {
 	//Init()
@@ -27,7 +30,7 @@ func Init() {
 	fmt.Printf("%#v,%d,%d\n", s1, len(s1), cap(s1)) //[]int{1, 2},2,2
 }
 
-//从切片分配切片
+// 从切片分配切片
 func AssignSliceToAnother() {
 	s := make([]int, 7, 10)
 	for i := 0; i < 7; i++ {
@@ -86,4 +89,6 @@ func copySlice() {
 	s4[2] = 11
 	copy(s3, s4)
 	fmt.Println(s3) //[3 9 11 0 0]
+
+	bytes.Compare()
 }
