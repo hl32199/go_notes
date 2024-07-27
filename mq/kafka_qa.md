@@ -287,6 +287,75 @@ func (pom *partitionOffsetManager) MarkOffset(offset int64, metadata string) {
 如果想充分利用服务器cpu，可以增加分区数，在消费者组中的消费者数量不变的情况下，单个消费者分配到的分区数会增加，而每个分区有一
 个独立的协程在消费。
 
+#### 非重启情况下，消费者拉取消息和commit offset有没有关系？
+在sarama库中，会为每个消费的分区维护一个下一次拉取消息的offset，这个offset等于已经拉取的消息的最大的offset+1。一个分区每次拉取消息，都是以这个offset作为起始offset(参见FetchRequest:FetchOffset)。
+相关代码：
+```go
+func (bc *brokerConsumer) fetchNewMessages() (*FetchResponse, error) {
+	request := &FetchRequest{
+		MinBytes:    bc.consumer.conf.Consumer.Fetch.Min,
+		MaxWaitTime: int32(bc.consumer.conf.Consumer.MaxWaitTime / time.Millisecond),
+	}
+	//……略……
+
+	for child := range bc.subscriptions {
+		request.AddBlock(child.topic, child.partition, child.offset, child.fetchSize)
+	}
+
+	return bc.broker.Fetch(request)
+}
+```
+```go
+func (r *FetchRequest) AddBlock(topic string, partitionID int32, fetchOffset int64, maxBytes int32) {
+	//……略……
+	tmp := new(fetchRequestBlock)
+	tmp.Version = r.Version
+	tmp.maxBytes = maxBytes
+	tmp.fetchOffset = fetchOffset
+	if r.Version >= 9 {
+		tmp.currentLeaderEpoch = int32(-1)
+	}
+
+	r.blocks[topic][partitionID] = tmp
+}
+```
+解析获取的消息时，把offset设置为收到消息中的最大offset
+```go
+func (child *partitionConsumer) parseMessages(msgSet *MessageSet) ([]*ConsumerMessage, error) {
+	var messages []*ConsumerMessage
+	for _, msgBlock := range msgSet.Messages {
+		for _, msg := range msgBlock.Messages() {
+			offset := msg.Offset
+			timestamp := msg.Msg.Timestamp
+			if msg.Msg.Version >= 1 {
+				baseOffset := msgBlock.Offset - msgBlock.Messages()[len(msgBlock.Messages())-1].Offset
+				offset += baseOffset
+				if msg.Msg.LogAppendTime {
+					timestamp = msgBlock.Msg.Timestamp
+				}
+			}
+			if offset < child.offset {
+				continue
+			}
+			messages = append(messages, &ConsumerMessage{
+				Topic:          child.topic,
+				Partition:      child.partition,
+				Key:            msg.Msg.Key,
+				Value:          msg.Msg.Value,
+				Offset:         offset,
+				Timestamp:      timestamp,
+				BlockTimestamp: msgBlock.Msg.Timestamp,
+			})
+			child.offset = offset + 1
+		}
+	}
+	if len(messages) == 0 {
+		child.offset++
+	}
+	return messages, nil
+}
+```
+
 #### 问：如果消费者服务有10个实例，发版时，每个实例串行重启，是否会导致10次 rebalance?如果是并行重启呢？
 
 #### 问：如何回溯消息（重新消费已消费过的消息）?
